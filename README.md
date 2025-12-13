@@ -1,12 +1,12 @@
 # Infranest Frontend 🚀
 
-Frontend del proyecto **Infranest**, construido con **React + TypeScript** usando **Vite**.
+Frontend for the **Infranest** project, built with **React + TypeScript** using **Vite**.
 
 ---
 
-## 🔖 Tecnologías
+## 🔖 Technologies
 
-| Tecnología | Versión |
+| Technology | Version |
 |------------|---------|
 | Node.js    | 20.16.0 |
 | npm        | 10.x.x  |
@@ -21,16 +21,16 @@ Frontend del proyecto **Infranest**, construido con **React + TypeScript** usand
 
 ---
 
-## ⚡ Instalación
+## ⚡ Installation
 
-Clona el repositorio y entra a la carpeta del proyecto:
+Clone the repository and change into the project folder:
 
 ```bash
-git clone <URL_DEL_REPO>
+git clone <REPO_URL>
 cd infranest-frontend
 ```
 
-Instala las dependencias:
+Install dependencies:
 
 ```bash
 npm install
@@ -38,51 +38,30 @@ npm install
 
 ---
 
-## 🚀 Ejecución en desarrollo
-Para iniciar la app en modo desarrollo:
+## 🚀 Run in development
+To start the app in development mode:
 
 ```bash
 npm run dev
 ```
-Abre tu navegador en la dirección que aparezca en la consola (por ejemplo, http://localhost:5173).
+Open the address shown in the console (by default, http://localhost:5173).
 
 ---
 
-## 🏗 Estructura básica del proyecto
-```php
-Copiar código
+## 🏗 Basic project structure
+```
 infranest-frontend/
-├─ node_modules/       # dependencias
-├─ public/             # archivos estáticos
-├─ src/                # código fuente
-│  ├─ App.tsx          # componente principal
-│  └─ main.tsx         # punto de entrada
-├─ package.json        # info del proyecto y dependencias
-├─ tsconfig.json       # configuración TypeScript
-├─ vite.config.ts      # configuración Vite
-└─ .gitignore          # archivos ignorados por Git
+├─ node_modules/       # dependencies
+├─ public/             # static files
+├─ src/                # source code
+│  ├─ App.tsx          # main component
+│  └─ main.tsx         # entry point
+├─ package.json        # project info and dependencies
+├─ tsconfig.json       # TypeScript configuration
+├─ vite.config.ts      # Vite configuration
+└─ .gitignore          # files ignored by Git
 ```
 
----
-
-## 🔹 Notas
-* Se utiliza TypeScript para mayor seguridad y escalabilidad.
-
-* `.gitignore` incluye `node_modules/`, `dist/` y archivos de configuración locales para mantener el repo limpio.
-
-* Puedes agregar librerías adicionales según necesites (React Router, Tailwind, Material UI, etc.).
-
-📄 Licencia
-Este proyecto es libre de usar y modificar según tus necesidades.
-
-yaml
-Copiar código
-
----
-
-Si quieres, puedo hacer también **una versión más “minimalista para GitHub”** que quede limpia y bonita en la página principal del repo, lista para mostrar a otros.  
-
-¿Quieres que haga eso?
 
 # React + TypeScript + Vite
 
@@ -90,12 +69,12 @@ This template provides a minimal setup to get React working in Vite with HMR and
 
 Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) — uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in rollup-vite) for Fast Refresh.
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) — uses [SWC](https://swc.rs/) for Fast Refresh.
 
 ## React Compiler
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The React Compiler is not enabled in this template because of its impact on dev and build performance. To add it, see the React Compiler installation guide: https://react.dev/learn/react-compiler/installation
 
 ## Expanding the ESLint configuration
 
@@ -109,11 +88,11 @@ export default defineConfig([
     extends: [
       // Other configs...
 
-      // Remove tseslint.configs.recommended and replace with this
+      // Replace tseslint.configs.recommended with a type-checked config
       tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
+      // Or use the stricter variant
       tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
+      // Optionally add stylistic rules
       tseslint.configs.stylisticTypeChecked,
 
       // Other configs...
