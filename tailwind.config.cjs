@@ -23,20 +23,6 @@ module.exports = {
         sans: ['Manrope', 'sans-serif'],
         display: ['Sora', 'sans-serif'],
       },
-      keyframes: {
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-10px)' },
-        },
-        signal: {
-          '0%, 100%': { opacity: '0.6', transform: 'translateY(0)' },
-          '50%': { opacity: '1', transform: 'translateY(-4px)' },
-        },
-      },
-      animation: {
-        float: 'float 8s ease-in-out infinite',
-        signal: 'signal 2.8s ease-in-out infinite',
-      },
     },
   },
   plugins: [],

@@ -1,7 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 
 function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    // Leer de localStorage sincrónicamente
+    const savedTheme = window.localStorage.getItem('theme')
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      // Aplicar al DOM inmediatamente
+      document.documentElement.setAttribute('data-theme', savedTheme)
+      return savedTheme
+    }
+    // Fallback a preferencia del sistema
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const systemTheme = prefersDark ? 'dark' : 'light'
+    // Aplicar al DOM inmediatamente
+    document.documentElement.setAttribute('data-theme', systemTheme)
+    return systemTheme
+  })
   const [navOpen, setNavOpen] = useState(false)
   const sliderRef = useRef<HTMLDivElement | null>(null)
   const dragState = useRef({
@@ -11,18 +25,10 @@ function App() {
   })
   const [dragging, setDragging] = useState(false)
 
+  // Asegurar que el tema se mantiene sincronizado con el DOM
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem('theme')
-    if (savedTheme === 'light' || savedTheme === 'dark') {
-      setTheme(savedTheme)
-      document.documentElement.setAttribute('data-theme', savedTheme)
-      return
-    }
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const systemTheme = prefersDark ? 'dark' : 'light'
-    setTheme(systemTheme)
-    document.documentElement.setAttribute('data-theme', systemTheme)
-  }, [])
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark'
@@ -77,6 +83,41 @@ function App() {
     setDragging(false)
   }
 
+  const handleSliderKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const slider = sliderRef.current
+    if (!slider) return
+
+    const scrollAmount = 200 // Cantidad de scroll en píxeles
+    const pageScrollAmount = slider.clientWidth * 0.8 // 80% del ancho visible
+
+    switch (event.key) {
+      case 'ArrowLeft':
+        event.preventDefault()
+        slider.scrollBy({ left: -scrollAmount, behavior: 'smooth' })
+        break
+      case 'ArrowRight':
+        event.preventDefault()
+        slider.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+        break
+      case 'Home':
+        event.preventDefault()
+        slider.scrollTo({ left: 0, behavior: 'smooth' })
+        break
+      case 'End':
+        event.preventDefault()
+        slider.scrollTo({ left: slider.scrollWidth, behavior: 'smooth' })
+        break
+      case 'PageUp':
+        event.preventDefault()
+        slider.scrollBy({ left: -pageScrollAmount, behavior: 'smooth' })
+        break
+      case 'PageDown':
+        event.preventDefault()
+        slider.scrollBy({ left: pageScrollAmount, behavior: 'smooth' })
+        break
+    }
+  }
+
   return (
     <div className="page">
       <header className="site-header">
@@ -93,7 +134,11 @@ function App() {
             <a href="#seguridad">Seguridad</a>
           </nav>
           <div className="header-actions">
-            <button className="btn btn-ghost theme-toggle" onClick={toggleTheme}>
+            <button
+              className="btn btn-ghost theme-toggle"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+            >
               {theme === 'dark' ? (
                 <svg
                   className="h-5 w-5"
@@ -103,7 +148,7 @@ function App() {
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  aria-label="Cambiar a tema claro"
+                  aria-hidden="true"
                 >
                   <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8z" />
                 </svg>
@@ -116,7 +161,7 @@ function App() {
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  aria-label="Cambiar a tema oscuro"
+                  aria-hidden="true"
                 >
                   <circle cx="12" cy="12" r="4" />
                   <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
@@ -451,6 +496,7 @@ function App() {
               onPointerMove={handleSliderPointerMove}
               onPointerUp={handleSliderPointerUp}
               onPointerLeave={handleSliderPointerLeave}
+              onKeyDown={handleSliderKeyDown}
             >
               <div className="stack-track">
                 <div className="stack-item">
@@ -680,7 +726,6 @@ function App() {
                 <li>Revisiones técnicas y pruebas</li>
                 <li>Soporte post entrega</li>
               </ul>
-              <button className="btn btn-ghost">Descargar reporte</button>
             </div>
           </div>
         </section>
@@ -793,7 +838,11 @@ function App() {
         </section>
       </main>
 
-      <button className="theme-fab" onClick={toggleTheme}>
+      <button
+        className="theme-fab"
+        onClick={toggleTheme}
+        aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+      >
         {theme === 'dark' ? (
           <svg
             className="h-5 w-5"
@@ -803,7 +852,7 @@ function App() {
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
-            aria-label="Cambiar a tema claro"
+            aria-hidden="true"
           >
             <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8z" />
           </svg>
@@ -816,7 +865,7 @@ function App() {
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
-            aria-label="Cambiar a tema oscuro"
+            aria-hidden="true"
           >
             <circle cx="12" cy="12" r="4" />
             <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
