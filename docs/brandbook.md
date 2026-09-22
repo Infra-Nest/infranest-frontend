@@ -1,6 +1,6 @@
-# Brandbook Infranest / Odimetry
+# Brandbook Infranest
 
-Fuente de verdad breve para las dos landings. Infranest es la startup; Odimetry es su primer producto. Las referencias Pantone son aproximadas para impresión: el HEX indicado manda en digital.
+Fuente de verdad editable para la marca corporativa y su aplicación en la landing de Infranest. Infranest es la startup; Odimetry es su primer producto y dispone de un brandbook específico en [docs/brandbook.md](../../odimetry-frontend/docs/brandbook.md). Las referencias Pantone son aproximadas para impresión: el HEX indicado manda en digital.
 
 ## Arquitectura de marca
 
