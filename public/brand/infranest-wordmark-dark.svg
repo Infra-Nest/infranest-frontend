@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="242" height="88" viewBox="0 0 242 88" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="title desc">
+  <title id="title">Infranest</title>
+  <desc id="desc">Logotipo horizontal de Infranest para fondos oscuros, con el isotipo de red y el nombre de marca.</desc>
+  <g transform="translate(22 12)">
+    <rect width="64" height="64" rx="16" fill="#17212B"/>
+    <path d="M18 45V19l28 26V19" fill="none" stroke="#0FA9A0" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="46" cy="19" r="4" fill="#F2B544"/>
+    <circle cx="18" cy="45" r="2.5" fill="#F2B544"/>
+  </g>
+  <text x="102" y="57" fill="#FFFFFF" font-family="Sora, Manrope, Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="-1" textLength="118" lengthAdjust="spacingAndGlyphs">Infranest</text>
+</svg>

@@ -1,138 +1,70 @@
-# Infranest Frontend 🚀
+# Infranest Frontend
 
-Frontend for the **Infranest** project, built with **React + TypeScript** using **Vite**.
+Landing corporativa de **Infranest**, startup tecnológica que desarrolla productos propios y ofrece servicios puntuales para integrarlos en el entorno de cada cliente. Desarrollamos productos tecnológicos que convierten problemas complejos en herramientas claras y útiles. **Odimetry** es nuestro primer producto.
 
----
+## Requisitos
 
-## 🔖 Technologies
+- Node.js 22, según `.nvmrc`
+- npm compatible con Node.js 22
 
-| Technology | Version |
-|------------|---------|
-| Node.js    | 20.16.0 |
-| npm        | 10.x.x  |
-| React      | 19.2.3  |
-| TypeScript | 5.9.3   |
-| Vite       | 7.2.7   |
-
-![React](https://img.shields.io/badge/React-19.2.3-blue?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-blue?logo=typescript)
-![Vite](https://img.shields.io/badge/Vite-7.2.7-blue?logo=vite)
-![Node.js](https://img.shields.io/badge/Node.js-20.16.0-green?logo=node.js)
-
----
-
-## ⚡ Installation
-
-Clone the repository and change into the project folder:
+## Desarrollo local
 
 ```bash
-git clone <REPO_URL>
-cd infranest-frontend
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
----
-
-## 🚀 Run in development
-To start the app in development mode:
-
-```bash
+nvm use
+npm ci
 npm run dev
 ```
-Open the address shown in the console (by default, http://localhost:5173).
 
----
+La landing queda disponible en la URL que indique Vite, normalmente `http://localhost:5173`.
 
-## 🏗 Basic project structure
+Si se ejecutan las dos landings a la vez, usa el puerto 5173 para esta aplicación:
+
+```bash
+npm run dev -- --port 5173
 ```
+
+Para validar la aplicación:
+
+```bash
+npm run lint
+npm run build
+git diff --check
+```
+
+## Estructura relevante
+
+```text
 infranest-frontend/
-├─ node_modules/       # dependencies
-├─ public/             # static files
-├─ src/                # source code
-│  ├─ App.tsx          # main component
-│  └─ main.tsx         # entry point
-├─ package.json        # project info and dependencies
-├─ tsconfig.json       # TypeScript configuration
-├─ vite.config.ts      # Vite configuration
-└─ .gitignore          # files ignored by Git
+├─ public/brand/infranest-mark.svg  # Isotipo corporativo
+├─ public/brand/infranest-wordmark*.svg # Logotipo horizontal, variantes de fondo
+├─ public/brand/infranest-social.* # Pieza social 1200x630
+├─ src/App.tsx                      # Landing y comportamiento de UI
+├─ src/index.css                    # Tokens, temas y estilos responsive
+├─ index.html                       # Metadatos y favicon
+├─ docs/brandbook.md                # Fuente de verdad de marca
+└─ .nvmrc                           # Node.js 22
 ```
 
+Consulta [docs/brandbook.md](docs/brandbook.md) para la arquitectura de marca, paleta, tipografías, usos y comandos de las dos landings.
 
-# React + TypeScript + Vite
+## SEO y revisión del build
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+El dominio canónico es `https://infranest.es/`. `index.html`, `public/robots.txt` y
+`public/sitemap.xml` comparten ese destino. Los datos estructurados describen
+Infranest como organización, sin valoraciones ni afirmaciones comerciales inventadas.
 
-Currently, two official plugins are available:
+`npm run build` prerenderiza el mismo componente React en `dist/index.html`, con
+el contenido y los enlaces disponibles sin JavaScript. React hidrata ese HTML
+para activar el menú y el selector de tema. No requiere un servidor de React
+en producción ni dependencias adicionales.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) — uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in rollup-vite) for Fast Refresh.
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) — uses [SWC](https://swc.rs/) for Fast Refresh.
+Para revisar el resultado que se publicaría:
 
-## React Compiler
-
-The React Compiler is not enabled in this template because of its impact on dev and build performance. To add it, see the React Compiler installation guide: https://react.dev/learn/react-compiler/installation
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Replace tseslint.configs.recommended with a type-checked config
-      tseslint.configs.recommendedTypeChecked,
-      // Or use the stricter variant
-      tseslint.configs.strictTypeChecked,
-      // Optionally add stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
+npm run preview -- --host 127.0.0.1 --port 4173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Después de publicar, comprobar HTTPS, redirecciones al dominio canónico y enviar
+el sitemap a Google Search Console. La validación local no acredita indexación
+ni posiciones en buscadores.
