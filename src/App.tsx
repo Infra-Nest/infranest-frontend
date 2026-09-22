@@ -1,914 +1,104 @@
 import { useEffect, useRef, useState } from 'react'
 
-function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    // Leer de localStorage sincrónicamente
-    const savedTheme = window.localStorage.getItem('theme')
-    if (savedTheme === 'light' || savedTheme === 'dark') {
-      // Aplicar al DOM inmediatamente
-      document.documentElement.setAttribute('data-theme', savedTheme)
-      return savedTheme
-    }
-    // Fallback a preferencia del sistema
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const systemTheme = prefersDark ? 'dark' : 'light'
-    // Aplicar al DOM inmediatamente
-    document.documentElement.setAttribute('data-theme', systemTheme)
-    return systemTheme
-  })
-  const [navOpen, setNavOpen] = useState(false)
-  const sliderRef = useRef<HTMLDivElement | null>(null)
-  const dragState = useRef({
-    isDown: false,
-    startX: 0,
-    scrollLeft: 0,
-  })
-  const [dragging, setDragging] = useState(false)
+const navigation = [['#plataforma', 'Nuestra idea'], ['#productos', 'Odimetry'], ['#servicios', 'Cómo trabajamos'], ['#contacto', 'Hablemos']]
+const questions = [
+  ['¿Para quién son los productos de Infranest?', 'Para pymes y profesionales autónomos que necesitan resolver una tarea tecnológica concreta, sin asumir un proyecto desproporcionado ni disponer de un equipo técnico amplio.'],
+  ['¿Desarrolláis productos propios o prestáis servicios?', 'Hacemos ambas cosas. Desarrollamos productos propios y ofrecemos servicios puntuales de integración, configuración y puesta en marcha cuando ayudan a incorporarlos en el entorno del cliente.'],
+  ['¿Podéis ayudarnos con la puesta en marcha?', 'Sí. Ofrecemos integración, configuración y acompañamiento para facilitar la adopción de nuestros productos. Primero hablamos del contexto y acordamos qué trabajo tiene sentido y cuál será su alcance.'],
+  ['¿Cómo decidís qué mejorar?', 'Escuchamos cada propuesta y evaluamos su utilidad, si puede servir a más usuarios y cómo encaja en nuestra dirección. Explicamos qué podemos priorizar y qué debe esperar.'],
+]
 
-  // Asegurar que el tema se mantiene sincronizado con el DOM
+function NetworkDrawing() {
+  return <svg className="network-drawing" viewBox="0 0 600 570" fill="none" aria-hidden="true">
+    <g stroke="currentColor"><path d="M30 390H570M30 300H570M30 210H570M120 60V510M300 60V510M480 60V510" opacity=".12" /><path d="M30 480H570" opacity=".28" /></g>
+    <path d="M125 430V135L475 430V135" stroke="#0FA9A0" strokeLinecap="round" strokeLinejoin="round" strokeWidth="30" />
+    <circle cx="475" cy="135" r="29" fill="#F2B544" />
+    <circle cx="125" cy="430" r="15" fill="#F2B544" />
+    <circle cx="300" cy="282" r="8" fill="currentColor" />
+    <path d="M125 480H475" stroke="currentColor" opacity=".25" />
+  </svg>
+}
+
+function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [navOpen, setNavOpen] = useState(false)
+  const menuButton = useRef<HTMLButtonElement>(null)
+
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-  }, [theme])
+    document.documentElement.dataset.enhanced = 'true'
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const syncTheme = () => {
+      let preference: string | null = null
+      try { preference = window.localStorage.getItem('theme') } catch { /* El tema funciona sin almacenamiento. */ }
+      const next = preference === 'dark' || (preference !== 'light' && media.matches) ? 'dark' : 'light'
+      document.documentElement.dataset.theme = next
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#101d27' : '#f5f7f8')
+      setTheme(next)
+    }
+    syncTheme()
+    media.addEventListener('change', syncTheme)
+    window.addEventListener('storage', syncTheme)
+    return () => { media.removeEventListener('change', syncTheme); window.removeEventListener('storage', syncTheme) }
+  }, [])
+
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 1050px)')
+    const closeOnDesktop = () => { if (desktop.matches) setNavOpen(false) }
+    desktop.addEventListener('change', closeOnDesktop)
+    return () => desktop.removeEventListener('change', closeOnDesktop)
+  }, [])
 
   const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark'
-    const root = document.documentElement
-    const applyTheme = () => {
-      setTheme(nextTheme)
-      root.setAttribute('data-theme', nextTheme)
-      window.localStorage.setItem('theme', nextTheme)
-    }
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (!prefersReduced && 'startViewTransition' in document) {
-      ;(document as { startViewTransition: (cb: () => void) => void }).startViewTransition(
-        applyTheme,
-      )
-    } else {
-      applyTheme()
-    }
+    const next = theme === 'light' ? 'dark' : 'light'
+    setTheme(next)
+    document.documentElement.dataset.theme = next
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#101d27' : '#f5f7f8')
+    try { window.localStorage.setItem('theme', next) } catch { /* Preferencia solo para esta visita. */ }
   }
 
-  const toggleNav = () => {
-    setNavOpen((prev) => !prev)
-  }
-
-  const handleSliderPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    const slider = sliderRef.current
-    if (!slider) return
-    dragState.current.isDown = true
-    dragState.current.startX = event.pageX - slider.offsetLeft
-    dragState.current.scrollLeft = slider.scrollLeft
-    slider.setPointerCapture(event.pointerId)
-    setDragging(true)
-  }
-
-  const handleSliderPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const slider = sliderRef.current
-    if (!slider || !dragState.current.isDown) return
-    const x = event.pageX - slider.offsetLeft
-    const walk = x - dragState.current.startX
-    slider.scrollLeft = dragState.current.scrollLeft - walk
-  }
-
-  const handleSliderPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    const slider = sliderRef.current
-    if (!slider) return
-    dragState.current.isDown = false
-    slider.releasePointerCapture(event.pointerId)
-    setDragging(false)
-  }
-
-  const handleSliderPointerLeave = () => {
-    dragState.current.isDown = false
-    setDragging(false)
-  }
-
-  const handleSliderKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const slider = sliderRef.current
-    if (!slider) return
-
-    const scrollAmount = 200 // Cantidad de scroll en píxeles
-    const pageScrollAmount = slider.clientWidth * 0.8 // 80% del ancho visible
-
-    switch (event.key) {
-      case 'ArrowLeft':
-        event.preventDefault()
-        slider.scrollBy({ left: -scrollAmount, behavior: 'smooth' })
-        break
-      case 'ArrowRight':
-        event.preventDefault()
-        slider.scrollBy({ left: scrollAmount, behavior: 'smooth' })
-        break
-      case 'Home':
-        event.preventDefault()
-        slider.scrollTo({ left: 0, behavior: 'smooth' })
-        break
-      case 'End':
-        event.preventDefault()
-        slider.scrollTo({ left: slider.scrollWidth, behavior: 'smooth' })
-        break
-      case 'PageUp':
-        event.preventDefault()
-        slider.scrollBy({ left: -pageScrollAmount, behavior: 'smooth' })
-        break
-      case 'PageDown':
-        event.preventDefault()
-        slider.scrollBy({ left: pageScrollAmount, behavior: 'smooth' })
-        break
-    }
-  }
+  const themeButton = <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none" /></svg></button>
 
   return (
-    <div className="page">
-      <header className="site-header">
+    <div className="page" id="inicio">
+      <a className="skip-link" href="#contenido">Saltar al contenido</a>
+      <header className="site-header" onKeyDown={(event) => {
+        if (event.key === 'Escape' && navOpen) { setNavOpen(false); menuButton.current?.focus() }
+      }}>
         <div className="container header-inner">
-          <div className="brand">
-            <span className="brand-mark">IN</span>
-            <span className="brand-name">Infranest</span>
+          <a className="brand" href="#inicio" aria-label="Infranest, inicio"><img src="/brand/infranest-mark.svg" width="44" height="44" alt="" /><span translate="no">Infranest</span></a>
+          <div className="header-controls header-controls-mobile">
+            {themeButton}
+            <button ref={menuButton} className="menu-toggle" type="button" aria-expanded={navOpen} aria-controls="site-navigation" onClick={() => setNavOpen(!navOpen)}>{navOpen ? 'Cerrar' : 'Menú'}<span aria-hidden="true">{navOpen ? '−' : '+'}</span></button>
           </div>
-          <nav className="nav">
-            <a href="#plataforma">Plataforma</a>
-            <a href="#productos">Productos</a>
-            <a href="#servicios">Servicios</a>
-            <a href="#casos">Casos</a>
-            <a href="#seguridad">Seguridad</a>
-          </nav>
-          <div className="header-actions">
-            <button
-              className="btn btn-ghost theme-toggle"
-              onClick={toggleTheme}
-              aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
-            >
-              {theme === 'dark' ? (
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8z" />
-                </svg>
-              ) : (
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-                </svg>
-              )}
-            </button>
-            <a className="btn btn-primary" href="#contacto">
-              Contactar
-            </a>
-            <button
-              className={`btn btn-ghost nav-toggle ${navOpen ? 'open' : ''}`}
-              onClick={toggleNav}
-              aria-label={navOpen ? 'Cerrar menú' : 'Abrir menú'}
-              aria-expanded={navOpen}
-              aria-controls="mobile-menu"
-            >
-              <span className="hamburger">
-                <span />
-                <span />
-                <span />
-              </span>
-            </button>
-          </div>
-        </div>
-        <div id="mobile-menu" className={`mobile-menu ${navOpen ? 'open' : ''}`}>
-          <div className="mobile-menu-inner">
-            <a href="#plataforma" onClick={() => setNavOpen(false)}>
-              Plataforma
-            </a>
-            <a href="#productos" onClick={() => setNavOpen(false)}>
-              Productos
-            </a>
-            <a href="#servicios" onClick={() => setNavOpen(false)}>
-              Servicios
-            </a>
-            <a href="#casos" onClick={() => setNavOpen(false)}>
-              Casos
-            </a>
-            <a href="#seguridad" onClick={() => setNavOpen(false)}>
-              Seguridad
-            </a>
-            <div className="mobile-actions">
-              <a
-                className="btn btn-primary"
-                href="#contacto"
-                onClick={() => setNavOpen(false)}
-              >
-                Contactar
-              </a>
-            </div>
-          </div>
+          <nav id="site-navigation" className={`site-nav${navOpen ? ' is-open' : ''}`} aria-label="Navegación principal">{navigation.map(([href, label]) => <a key={href} href={href} onClick={(event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+            setNavOpen(false)
+            const heading = document.querySelector<HTMLElement>(`${href} h2`)
+            if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }) }
+          }}>{label}</a>)}</nav>
+          <div className="header-controls header-controls-desktop">{themeButton}</div>
         </div>
       </header>
-
-      <main>
-        <section className="hero">
-          <div className="container hero-grid">
-            <div className="hero-copy">
-              <p className="eyebrow">Consultoría IT y proyectos a medida</p>
-              <h1>Consultoría IT clara y accionable.</h1>
-              <p className="lead">
-                Acompañamos desde el diagnóstico hasta la implementación,
-                combinando estrategia, desarrollo y operaciones para pymes,
-                grandes empresas y particulares.
-              </p>
-              <div className="hero-actions">
-                <button className="btn btn-primary">Solicitar diagnóstico</button>
-                <button className="btn btn-outline">Explorar soluciones</button>
-              </div>
-              <div className="hero-trust">
-                <span>Trabajo remoto y presencial</span>
-                <span>Proyectos para pymes y grandes empresas</span>
-                <span>Procesos y entregas claras</span>
-              </div>
-            </div>
-
-            <div className="hero-card">
-              <div className="signal">
-                <span />
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="hero-panel">
-                <h3>Proyectos a medida</h3>
-                <ul>
-                  <li>
-                    <span>Diagnóstico técnico</span>
-                    <strong>Inicial</strong>
-                  </li>
-                  <li>
-                    <span>Propuesta clara</span>
-                    <strong>Por fases</strong>
-                  </li>
-                  <li>
-                    <span>Acompañamiento</span>
-                    <strong className="wrap-right">Durante el desarrollo</strong>
-                  </li>
-                </ul>
-                <p className="form-note">Cuéntanos tu caso y lo revisamos contigo.</p>
-              </div>
-            </div>
-          </div>
+      <main id="contenido" tabIndex={-1}>
+        <section className="hero container" aria-labelledby="hero-title">
+          <div className="hero-copy"><h1 id="hero-title">Productos tecnológicos para el día a día de tu empresa.</h1><p className="hero-description">Creamos herramientas claras para pymes y autónomos. Y te acompañamos para que encajen en tu forma de trabajar.</p><div className="hero-actions"><a className="button button-primary" href="#productos">Conoce nuestro primer producto</a><a className="text-link" href="#plataforma">Así entendemos la tecnología</a></div></div>
+          <div className="hero-art"><NetworkDrawing /><p className="art-caption">De un problema concreto.<br />A una herramienta que encaja.</p></div>
+          <div className="hero-bottom"><span>Productos propios. Comunicación directa.</span><a href="#productos">Empieza por Odimetry <span aria-hidden="true">↘</span></a></div>
         </section>
-
-        <section className="section stats reveal">
-          <div className="container stats-grid">
-            <div>
-              <h2>Impacto real en cada proyecto</h2>
-              <p>
-                Alineamos tecnología con objetivos de negocio, clarificando
-                prioridades, riesgos y entregables para cada tipo de cliente.
-              </p>
-            </div>
-            <div className="stat-cards">
-              <div className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="9" />
-                    <circle cx="12" cy="12" r="4" />
-                    <path d="M12 3v2M12 19v2M3 12h2M19 12h2" />
-                  </svg>
-                </div>
-                <h3>Dirección clara</h3>
-                <p>Roadmaps con hitos y estimaciones realistas</p>
-              </div>
-              <div className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M13 2 5 14h7l-1 8 8-12h-7l1-8z" />
-                  </svg>
-                </div>
-                <h3>Entrega ágil</h3>
-                <p>Iteraciones rápidas con validación continua</p>
-              </div>
-              <div className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="9" />
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M4.9 4.9 8 8M16 16l3.1 3.1M19.1 4.9 16 8M8 16l-3.1 3.1" />
-                  </svg>
-                </div>
-                <h3>Soporte continuo</h3>
-                <p>Acompañamiento y mantenimiento post entrega</p>
-              </div>
-            </div>
-          </div>
+        <section className="section container idea-section" id="plataforma" aria-labelledby="idea-title">
+          <div><p className="section-label">La idea que nos mueve</p><h2 id="idea-title">La tecnología tiene que encajar contigo.</h2></div><div className="idea-copy"><p className="large-copy">Una tarea concreta merece una solución clara. Con el alcance adecuado y sin añadir complejidad innecesaria.</p><p>En Infranest desarrollamos productos propios y escuchamos a quienes los utilizan. La integración, la configuración y la puesta en marcha ayudan a llevar cada producto al contexto real de tu negocio.</p><div className="audience" id="casos"><span>Pensado para</span><strong>Pymes y profesionales autónomos</strong></div></div>
         </section>
-
-        <section id="plataforma" className="section platform reveal">
-          <div className="container">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">Enfoque de trabajo</p>
-                <h2>Consultoría, desarrollo y soporte continuo.</h2>
-              </div>
-              <p>
-                Diseñamos soluciones técnicas, construimos productos y
-                acompañamos la puesta en marcha con procesos claros.
-              </p>
-            </div>
-            <div className="cards-grid">
-              <article className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="6" />
-                    <path d="M20 20l-3.5-3.5" />
-                  </svg>
-                </div>
-                <h3>Diagnóstico y estrategia</h3>
-                <p>
-                  Descubrimos prioridades, riesgos y objetivos con un plan
-                  realista y accionable.
-                </p>
-              </article>
-              <article className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2 20 6 12 10 4 6l8-4z" />
-                    <path d="M4 6v8l8 4 8-4V6" />
-                    <path d="M12 10v8" />
-                  </svg>
-                </div>
-                <h3>Arquitectura y desarrollo</h3>
-                <p>
-                  Diseñamos e implementamos soluciones seguras, escalables y
-                  fáciles de mantener.
-                </p>
-              </article>
-              <article className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10 14a5 5 0 0 1 0-7l1.5-1.5a5 5 0 0 1 7 7L17 14" />
-                    <path d="M14 10a5 5 0 0 1 0 7l-1.5 1.5a5 5 0 0 1-7-7L7 10" />
-                  </svg>
-                </div>
-                <h3>Integraciones y automatización</h3>
-                <p>
-                  Conectamos sistemas existentes, optimizamos flujos y
-                  reducimos tareas manuales.
-                </p>
-              </article>
-              <article className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 7a4 4 0 0 1-6 3.5L7.5 18a2 2 0 1 1-3-3L12 7.5A4 4 0 0 1 21 7z" />
-                  </svg>
-                </div>
-                <h3>Operación y soporte</h3>
-                <p>
-                  Monitoreo, mejoras continuas y mantenimiento post entrega.
-                </p>
-              </article>
-            </div>
-          </div>
+        <section className="product-section" id="productos" aria-labelledby="product-title">
+          <div className="container product-layout"><div className="product-copy"><p className="section-label">Nuestro primer producto</p><h2 id="product-title" translate="no">Odimetry<span aria-hidden="true">.</span></h2><p className="product-heading">Conoce qué expone tu negocio en Internet.</p><p>Una evaluación externa de ciberseguridad sobre dominios y activos autorizados, con resultados comprensibles y próximos pasos orientativos.</p><a className="button button-teal" href="https://odimetry.es/">Conocer Odimetry <span aria-hidden="true">↗</span></a><p className="product-stage"><span className="signal" />En desarrollo y validación de mercado.</p></div><div className="product-scope"><div className="scope-heading"><span>Del análisis a la decisión</span><span className="scope-symbol" aria-hidden="true">↘</span></div><dl><div><dt>Qué hay expuesto</dt><dd>Servicios visibles desde Internet en el alcance autorizado.</dd></div><div><dt>Qué necesita atención</dt><dd>Vulnerabilidades conocidas y configuraciones inseguras identificadas.</dd></div><div><dt>Por dónde empezar</dt><dd>Un informe claro y priorizado para orientar las siguientes acciones.</dd></div></dl><p className="scope-note">Una evaluación del momento y del alcance analizado. Sin promesas de seguridad total.</p></div></div>
         </section>
-
-        <section id="productos" className="section products reveal">
-          <div className="container">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">Nuestros productos</p>
-                <h2>Producto propio y proyectos a medida.</h2>
-              </div>
-              <p>
-                Hoy contamos con Odimetry, nuestro primer producto en
-                desarrollo, junto con proyectos a medida para particulares y
-                empresas.
-              </p>
-            </div>
-            <div className="cards-grid">
-              <article className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2 20 6v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z" />
-                    <path d="M9 12l2 2 4-4" />
-                  </svg>
-                </div>
-                <h3>Odimetry</h3>
-                <p>
-                  Auditorías de ciberseguridad automatizadas para descubrir lo
-                  que expones en Internet antes de que lo haga un atacante.
-                  Identifica servicios expuestos, vulnerabilidades conocidas y
-                  configuraciones inseguras. Sin instalaciones, sin agentes.
-                </p>
-                <a className="product-link" href="https://odimetry-landing.vercel.app" target="_blank" rel="noreferrer">
-                  Ver landing de Odimetry
-                </a>
-              </article>
-            </div>
-          </div>
+        <section className="section container adoption-section" id="servicios" aria-labelledby="adoption-title">
+          <div className="adoption-heading"><p className="section-label">Del producto al uso real</p><h2 id="adoption-title">Construimos el producto.<br />Acompañamos su adopción.</h2><p>La puesta en marcha también cuenta. Acordamos contigo qué hace falta para empezar y mantenemos una conversación abierta para mejorar.</p></div><ol className="process" id="proceso"><li><span className="step-number">01</span><div><h3>Entender tu contexto</h3><p>Escuchamos qué necesitas resolver y vemos si el producto encaja.</p></div></li><li><span className="step-number">02</span><div><h3>Acordar lo necesario</h3><p>Definimos la integración, la configuración y el alcance de la puesta en marcha.</p></div></li><li><span className="step-number">03</span><div><h3>Aprender contigo</h3><p>Recogemos tu experiencia y explicamos qué mejoras priorizamos y por qué.</p></div></li></ol>
         </section>
-
-        <section id="servicios" className="section services reveal">
-          <div className="container services-grid">
-            <div>
-              <p className="eyebrow">Servicios</p>
-              <h2>Equipo cercano para construir con confianza.</h2>
-              <p>
-                Consultoría IT, implementación y acompañamiento con procesos
-                claros y comunicación directa.
-              </p>
-              <ul className="checklist">
-                <li>Diagnóstico técnico y roadmap de mejoras</li>
-                <li>Desarrollo de software y automatización</li>
-                <li>Integraciones con sistemas existentes</li>
-                <li>Mantenimiento, soporte y evolución del producto</li>
-                <li>Proyectos a medida según tu arquitectura</li>
-              </ul>
-            </div>
-            <div className="service-panels">
-              <div className="panel">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 4h16v10H7l-3 3V4z" />
-                  </svg>
-                </div>
-                <h3>Consultoría IT práctica</h3>
-                <p>
-                  Evaluación técnica, plan de acción y acompañamiento en la
-                  ejecución.
-                </p>
-              </div>
-              <div className="panel">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M8 9 4 12l4 3M16 9l4 3-4 3M10 19l4-14" />
-                  </svg>
-                </div>
-                <h3>Desarrollo y delivery</h3>
-                <p>
-                  Desarrollo de producto y automatizaciones con un equipo
-                  reducido y enfocado.
-                </p>
-              </div>
-              <div className="panel">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 3h6a2 2 0 0 1 2 2v2h-2a2 2 0 1 0 0 4h2v2a2 2 0 0 1-2 2h-2v-2a2 2 0 1 0-4 0v2H9a2 2 0 0 1-2-2v-2h2a2 2 0 1 0 0-4H7V5a2 2 0 0 1 2-2z" />
-                  </svg>
-                </div>
-                <h3>Proyectos a medida</h3>
-                <p>
-                  Soluciones personalizadas para necesidades únicas con alcance
-                  claro y realista.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="section stack reveal">
-          <div className="container">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">Stack tecnológico</p>
-                <h2>Tecnologías con las que trabajamos.</h2>
-              </div>
-              <p>
-                Elegimos herramientas según el alcance. Nos movemos bien en
-                frontend, backend y automatización.
-              </p>
-            </div>
-            <div
-              ref={sliderRef}
-              className={`stack-slider ${dragging ? 'dragging' : ''}`}
-              aria-label="Tecnologías"
-              role="region"
-              tabIndex={0}
-              onPointerDown={handleSliderPointerDown}
-              onPointerMove={handleSliderPointerMove}
-              onPointerUp={handleSliderPointerUp}
-              onPointerLeave={handleSliderPointerLeave}
-              onKeyDown={handleSliderKeyDown}
-            >
-              <div className="stack-track">
-                <div className="stack-item">
-                  <img src="/stack-icons/angular.svg" alt="Angular" />
-                  <span>Angular</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/react.svg" alt="React" />
-                  <span>React</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/nextjs.svg" alt="Next.js" />
-                  <span>Next.js</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/nestjs.svg" alt="Nest.js" />
-                  <span>Nest.js</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/codeigniter.svg" alt="CodeIgniter" />
-                  <span>CodeIgniter</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/python.svg" alt="Python" />
-                  <span>Python</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/typescript.svg" alt="TypeScript" />
-                  <span>TypeScript</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/nodejs.svg" alt="Node.js" />
-                  <span>Node.js</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/postgresql.svg" alt="PostgreSQL" />
-                  <span>PostgreSQL</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/docker.svg" alt="Docker" />
-                  <span>Docker</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/aws.svg" alt="AWS" />
-                  <span>AWS</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/git.svg" alt="Git" />
-                  <span>Git</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/cursor.png" alt="Cursor" />
-                  <span>Cursor</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/openai.svg" alt="ChatGPT" />
-                  <span>ChatGPT</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/anthropic.svg" alt="Claude" />
-                  <span>Claude</span>
-                </div>
-                <div className="stack-item">
-                  <img src="/stack-icons/github-actions.svg" alt="CI/CD" />
-                  <span>CI/CD</span>
-                </div>
-
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/angular.svg" alt="" />
-                  <span>Angular</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/react.svg" alt="" />
-                  <span>React</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/nextjs.svg" alt="" />
-                  <span>Next.js</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/nestjs.svg" alt="" />
-                  <span>Nest.js</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/codeigniter.svg" alt="" />
-                  <span>CodeIgniter</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/python.svg" alt="" />
-                  <span>Python</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/typescript.svg" alt="" />
-                  <span>TypeScript</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/nodejs.svg" alt="" />
-                  <span>Node.js</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/postgresql.svg" alt="" />
-                  <span>PostgreSQL</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/docker.svg" alt="" />
-                  <span>Docker</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/aws.svg" alt="" />
-                  <span>AWS</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/git.svg" alt="" />
-                  <span>Git</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/cursor.png" alt="" />
-                  <span>Cursor</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/openai.svg" alt="" />
-                  <span>ChatGPT</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/anthropic.svg" alt="" />
-                  <span>Claude</span>
-                </div>
-                <div className="stack-item" aria-hidden="true">
-                  <img src="/stack-icons/github-actions.svg" alt="" />
-                  <span>CI/CD</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="casos" className="section cases reveal">
-          <div className="container">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">Casos de uso</p>
-                <h2>Soluciones adaptadas a cada perfil.</h2>
-              </div>
-            </div>
-            <div className="cards-grid">
-              <article className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 9h18l-1.5 11h-15z" />
-                    <path d="M4 9l2-5h12l2 5" />
-                  </svg>
-                </div>
-                <h3>Pymes en crecimiento</h3>
-                <p>
-                  Sistemas internos, automatización de procesos y reportes
-                  confiables.
-                </p>
-              </article>
-              <article className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="4" y="3" width="16" height="18" rx="2" />
-                    <path d="M8 7h2M8 11h2M8 15h2M14 7h2M14 11h2M14 15h2" />
-                  </svg>
-                </div>
-                <h3>Empresas consolidadas</h3>
-                <p>
-                  Modernización de plataformas y soporte para equipos internos.
-                </p>
-              </article>
-              <article className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 4c-4 1-7 4-8 8l4 4c4-1 7-4 8-8l-4-4z" />
-                    <path d="M6 14l-2 6 6-2" />
-                    <circle cx="15" cy="9" r="1" />
-                  </svg>
-                </div>
-                <h3>Startups y productos</h3>
-                <p>
-                  Roadmaps técnicos, MVPs y escalamiento progresivo.
-                </p>
-              </article>
-              <article className="card">
-                <div className="icon-badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="8" r="3" />
-                    <path d="M4 20a8 8 0 0 1 16 0" />
-                  </svg>
-                </div>
-                <h3>Particulares</h3>
-                <p>
-                  Asesoría técnica, soluciones puntuales y acompañamiento.
-                </p>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <section id="seguridad" className="section security reveal">
-          <div className="container security-grid">
-            <div>
-              <p className="eyebrow">Calidad y buenas prácticas</p>
-              <h2>Entregas confiables, sin sorpresas.</h2>
-              <p>
-                Priorizamos buenas prácticas, documentación y procesos para
-                garantizar resultados consistentes.
-              </p>
-              <div className="badges">
-                <span>Documentación</span>
-                <span>Versionado</span>
-                <span>QA</span>
-                <span>Mejora continua</span>
-              </div>
-            </div>
-            <div className="security-card">
-              <div className="icon-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 2h6l1 2h3v18H5V4h3l1-2z" />
-                  <path d="M9 12l2 2 4-4" />
-                </svg>
-              </div>
-              <h3>Checklist operativo</h3>
-              <ul>
-                <li>Alcance y objetivos alineados</li>
-                <li>Plan de trabajo y entregables</li>
-                <li>Revisiones técnicas y pruebas</li>
-                <li>Soporte post entrega</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        <section className="section process reveal">
-          <div className="container">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">Metodología</p>
-                <h2>De la evaluación al despliegue.</h2>
-              </div>
-              <p>
-                Activamos un roadmap claro para mover tu infraestructura a un
-                estándar corporativo sin detener operaciones.
-              </p>
-            </div>
-            <div className="process-steps">
-              <div className="step">
-                <span>01</span>
-                <h3>Diagnóstico</h3>
-                <p>Levantamiento técnico y financiero con brechas claras.</p>
-              </div>
-              <div className="step">
-                <span>02</span>
-                <h3>Diseño</h3>
-                <p>Arquitectura modular, presupuesto y cronograma.</p>
-              </div>
-              <div className="step">
-                <span>03</span>
-                <h3>Implementación</h3>
-                <p>Despliegue coordinado con equipos locales y proveedores.</p>
-              </div>
-              <div className="step">
-                <span>04</span>
-                <h3>Operación</h3>
-                <p>KPIs en vivo, soporte 24/7 y mejora continua.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="contacto" className="section contact reveal">
-          <div className="container contact-grid">
-            <div>
-              <p className="eyebrow">Contacto</p>
-              <h2>Cuéntalo y lo ponemos en marcha.</h2>
-              <p>
-                Completa el formulario y nuestro equipo te responderá con una
-                propuesta inicial. Podemos diseñar proyectos personalizados
-                según tu realidad operativa y regulatoria.
-              </p>
-              <div className="contact-cards">
-                <div className="card">
-                  <div className="icon-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="9" />
-                      <path d="M12 7v5l3 3" />
-                    </svg>
-                  </div>
-                  <h3>Tiempo de respuesta</h3>
-                  <p>24-48 horas hábiles</p>
-                </div>
-                <div className="card">
-                  <div className="icon-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 21s-6-5-6-10a6 6 0 1 1 12 0c0 5-6 10-6 10z" />
-                      <circle cx="12" cy="11" r="2" />
-                    </svg>
-                  </div>
-                  <h3>Soporte regional</h3>
-                  <p>España</p>
-                </div>
-              </div>
-            </div>
-            <form className="contact-form">
-              <label>
-                Nombre y apellido
-                <input type="text" placeholder="Tu nombre" />
-              </label>
-              <label>
-                Email corporativo
-                <input type="email" placeholder="nombre@empresa.com" />
-              </label>
-              <label>
-                Empresa
-                <input type="text" placeholder="Nombre de la empresa" />
-              </label>
-              <label>
-                Necesidad principal
-                <select>
-                  <option>Selecciona una opción</option>
-                  <option>Monitoreo y telemetría</option>
-                  <option>Modernización de infraestructura</option>
-                  <option>Proyectos a medida</option>
-                  <option>Seguridad y compliance</option>
-                </select>
-              </label>
-              <label>
-                Mensaje
-                <textarea rows={4} placeholder="Cuéntalo aquí" />
-              </label>
-              <button type="button" className="btn btn-primary">
-                Enviar solicitud
-              </button>
-              <p className="form-note">
-                Este formulario es una vista previa y no envía correos aún.
-              </p>
-            </form>
-          </div>
-        </section>
+        <section className="principles-section" id="seguridad" aria-labelledby="principles-title"><div className="container principles-layout"><p className="section-label">Nuestra forma de hacer</p><div><h2 id="principles-title">Hablar claro.<br />Escuchar de cerca.</h2><p>Sin dar por hecho lo que necesitas. Sin prometer lo que todavía no existe. Con flexibilidad para adaptarnos y criterio para decidir qué aporta valor al producto.</p></div><span className="connection-mark" aria-hidden="true"><i /><i /><i /></span></div></section>
+        <section className="section container faq-section" id="preguntas" aria-labelledby="faq-title"><div><p className="section-label">Antes de hablar</p><h2 id="faq-title">Las cosas claras, desde el principio.</h2></div><div className="faq-list">{questions.map(([question, answer]) => <details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div></section>
+        <section className="contact-section" id="contacto" aria-labelledby="contact-title"><div className="container contact-layout"><div><p className="section-label">Hablemos de tu contexto</p><h2 id="contact-title">¿Qué te gustaría<br />hacer más sencillo?</h2></div><div className="contact-copy"><p>Cuéntanos qué necesita tu negocio o qué te gustaría saber sobre Odimetry. Te explicaremos dónde podemos ayudarte.</p><a className="contact-email" href="mailto:info@infranest.es">info@infranest.es <span aria-hidden="true">↗</span></a><p className="contact-note">El enlace abre tu aplicación de correo. También puedes copiar la dirección y escribirnos desde tu servicio habitual.</p></div></div></section>
       </main>
-
-      <button
-        className="theme-fab"
-        onClick={toggleTheme}
-        aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
-      >
-        {theme === 'dark' ? (
-          <svg
-            className="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8z" />
-          </svg>
-        ) : (
-          <svg
-            className="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="4" />
-            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-          </svg>
-        )}
-      </button>
-
-      <footer className="site-footer">
-        <div className="container footer-grid">
-          <div>
-            <div className="brand">
-              <span className="brand-mark">IN</span>
-              <span className="brand-name">Infranest</span>
-            </div>
-            <p>
-              Plataforma corporativa para operar infraestructura crítica con
-              seguridad, eficiencia y control total.
-            </p>
-          </div>
-          <div>
-            <h4>Plataforma</h4>
-            <a href="#plataforma">Capacidades</a>
-            <a href="#productos">Productos</a>
-            <a href="#servicios">Servicios</a>
-            <a href="#seguridad">Cumplimiento</a>
-          </div>
-          <div>
-            <h4>Empresa</h4>
-            <a href="#casos">Casos de uso</a>
-            <a href="#contacto">Contacto</a>
-            <a href="mailto:hola@infranest.com">hola@infranest.com</a>
-          </div>
-          <div>
-            <h4>Oficinas</h4>
-            <p>Sevilla, España</p>
-            <p>+34 95 000 0000</p>
-          </div>
-        </div>
-        <div className="footer-bottom container">
-          <span>© 2026 Infranest. Todos los derechos reservados.</span>
-          <span>Privacidad · Términos · Seguridad</span>
-        </div>
-      </footer>
+      <footer className="site-footer"><div className="container footer-inner"><a className="brand" href="#inicio" aria-label="Infranest, volver al inicio"><img src="/brand/infranest-mark.svg" alt="" width="40" height="40" loading="lazy" /><span translate="no">Infranest</span></a><p>Productos claros para problemas complejos.</p><a className="text-link" href="#preguntas">Preguntas frecuentes</a><a className="text-link" href="#inicio">Volver arriba ↑</a></div></footer>
     </div>
   )
 }
