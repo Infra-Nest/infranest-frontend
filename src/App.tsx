@@ -90,12 +90,14 @@ const alreadyEnglishCopy = new Set([
   'Main navigation', 'Open navigation menu', 'Close navigation menu', 'Infranest, home', 'Infranest, back to home', 'Switch to light theme', 'Switch to dark theme',
 ])
 
+/** Records user-facing copy that has no English translation. */
 function auditEnglishCopy(copy: string): void {
   if (/\p{L}/u.test(copy) && englishCopy[copy] === undefined && !alreadyEnglishCopy.has(copy)) {
     recordMissingEnglishTranslation(copy)
   }
 }
 
+/** Recursively translates the text and accessible labels in a React node tree. */
 function localizeNode(node: ReactNode, language: Language): ReactNode {
   if (language === 'es') return node
   if (typeof node === 'string') {
@@ -124,6 +126,7 @@ function localizeNode(node: ReactNode, language: Language): ReactNode {
   return node
 }
 
+/** Renders links for switching between the Spanish and English landing pages. */
 function LanguageSwitch({ language }: { language: Language }) {
   if (language === 'en') {
     for (const label of ['Language', 'Spanish', 'English']) auditEnglishCopy(label)
@@ -145,6 +148,7 @@ function NetworkDrawing() {
   </svg>
 }
 
+/** Renders the landing page in the requested or URL-derived language. */
 function App({ language: requestedLanguage }: { language?: Language } = {}) {
   const englishPath = typeof window !== 'undefined' && /^\/en(?:\/|$)/.test(window.location.pathname)
   const language = requestedLanguage ?? (englishPath ? 'en' : 'es')
