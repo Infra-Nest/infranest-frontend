@@ -17,6 +17,7 @@ export default defineConfig({
     name: 'prerender-landing',
     apply: 'build',
     enforce: 'post',
+    /** Prerenders each landing page and verifies that its copy is translated. */
     async generateBundle(_, bundle) {
       for (const page of landingPages) {
         const html = bundle[page.fileName]

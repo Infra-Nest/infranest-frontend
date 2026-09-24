@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import { recordMissingEnglishTranslation } from './translationAudit'
 
 type Language = 'es' | 'en'
@@ -80,7 +80,19 @@ const englishCopy: Record<string, string> = {
   '¿Qué te gustaría': 'What would you like',
   'hacer más sencillo?': 'to make easier?',
   'Cuéntanos qué necesita tu negocio o qué te gustaría saber sobre Odimetry. Te explicaremos dónde podemos ayudarte.': 'Tell us what your business needs or what you would like to know about Odimetry. We will explain how we may be able to help.',
-  'El enlace abre tu aplicación de correo. También puedes copiar la dirección y escribirnos desde tu servicio habitual.': 'The link opens your email app. You can also copy the address and email us from your usual service.',
+  'Si lo prefieres, también puedes escribirnos directamente a ': 'If you prefer, you can also email us directly at ',
+  'info@infranest.es': 'info@infranest.es',
+  'Nombre': 'Name',
+  'Correo electrónico': 'Email',
+  'Asunto': 'Subject',
+  'Mensaje': 'Message',
+  'Enviar mensaje': 'Send message',
+  'Enviando…': 'Sending…',
+  'Estamos enviando tu mensaje…': 'We are sending your message…',
+  'Gracias. Hemos recibido tu mensaje.': 'Thanks. Your message has been sent.',
+  'No hemos podido enviar tu mensaje. Inténtalo de nuevo o escríbenos a ': 'We could not send your message. Please try again or email us at ',
+  'Has alcanzado el límite de envíos. Espera 15 minutos antes de volver a intentarlo o escríbenos a ': 'You have reached the sending limit. Wait 15 minutes before trying again or email us at ',
+  'Usaremos estos datos para responder a tu consulta.': 'We will use these details to reply to your enquiry.',
   'Productos claros para problemas complejos.': 'Clear products for complex problems.',
   'Preguntas frecuentes': 'Frequently asked questions',
   'Volver arriba ↑': 'Back to top ↑',
@@ -90,12 +102,72 @@ const alreadyEnglishCopy = new Set([
   'Main navigation', 'Open navigation menu', 'Close navigation menu', 'Infranest, home', 'Infranest, back to home', 'Switch to light theme', 'Switch to dark theme',
 ])
 
+function ContactForm({ language }: { language: Language }) {
+  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
+  const t = (copy: string) => {
+    if (language === 'es') return copy
+    const translation = englishCopy[copy]
+    if (translation === undefined) auditEnglishCopy(copy)
+    return translation ?? copy
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (status === 'sending') return
+    const form = event.currentTarget
+    const values = Object.fromEntries(new FormData(form).entries())
+    setStatus('sending')
+    setErrorMessage('')
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...values, language }),
+      })
+      if (response.status === 429) {
+        setErrorMessage(t('Has alcanzado el límite de envíos. Espera 15 minutos antes de volver a intentarlo o escríbenos a '))
+        setStatus('error')
+        return
+      }
+      if (!response.ok) throw new Error('Contact request failed')
+      form.reset()
+      setStatus('success')
+    } catch {
+      setStatus('error')
+      setErrorMessage(t('No hemos podido enviar tu mensaje. Inténtalo de nuevo o escríbenos a '))
+    }
+  }
+
+  return <form className="contact-form" onSubmit={handleSubmit}>
+    <div className="contact-form-grid">
+      <label>{t('Nombre')}<input name="name" autoComplete="name" required maxLength={120} /></label>
+      <label>{t('Correo electrónico')}<input name="email" type="email" autoComplete="email" required maxLength={254} /></label>
+    </div>
+    <label>{t('Asunto')}<input name="subject" required maxLength={160} /></label>
+    <label>{t('Mensaje')}<textarea name="message" rows={5} required minLength={10} maxLength={5000} /></label>
+    <label className="contact-trap" aria-hidden="true">Leave blank<input name="field_x9k2" tabIndex={-1} autoComplete="off" /></label>
+    <button className="contact-submit" type="submit" disabled={status === 'sending'}>
+      {status === 'sending' ? t('Enviando…') : t('Enviar mensaje')}
+      <span aria-hidden="true">↗</span>
+    </button>
+    <p className="contact-privacy-note">{t('Usaremos estos datos para responder a tu consulta.')}</p>
+    <p className="contact-status" data-state={status} role={status === 'error' ? 'alert' : 'status'} aria-live={status === 'error' ? 'assertive' : 'polite'} aria-atomic="true">{status === 'sending'
+      ? t('Estamos enviando tu mensaje…')
+      : status === 'success'
+        ? t('Gracias. Hemos recibido tu mensaje.')
+        : status === 'error' ? <>{errorMessage}<a href="mailto:info@infranest.es">info@infranest.es</a>.</> : ''}</p>
+  </form>
+}
+
+/** Records user-facing copy that has no English translation. */
 function auditEnglishCopy(copy: string): void {
   if (/\p{L}/u.test(copy) && englishCopy[copy] === undefined && !alreadyEnglishCopy.has(copy)) {
     recordMissingEnglishTranslation(copy)
   }
 }
 
+/** Recursively translates the text and accessible labels in a React node tree. */
 function localizeNode(node: ReactNode, language: Language): ReactNode {
   if (language === 'es') return node
   if (typeof node === 'string') {
@@ -124,6 +196,7 @@ function localizeNode(node: ReactNode, language: Language): ReactNode {
   return node
 }
 
+/** Renders links for switching between the Spanish and English landing pages. */
 function LanguageSwitch({ language }: { language: Language }) {
   if (language === 'en') {
     for (const label of ['Language', 'Spanish', 'English']) auditEnglishCopy(label)
@@ -145,6 +218,7 @@ function NetworkDrawing() {
   </svg>
 }
 
+/** Renders the landing page in the requested or URL-derived language. */
 function App({ language: requestedLanguage }: { language?: Language } = {}) {
   const englishPath = typeof window !== 'undefined' && /^\/en(?:\/|$)/.test(window.location.pathname)
   const language = requestedLanguage ?? (englishPath ? 'en' : 'es')
@@ -237,7 +311,7 @@ function App({ language: requestedLanguage }: { language?: Language } = {}) {
         </section>
         <section className="principles-section" id="seguridad" aria-labelledby="principles-title"><div className="container principles-layout"><p className="section-label">Nuestra forma de hacer</p><div><h2 id="principles-title">Hablar claro.<br />Escuchar de cerca.</h2><p>Sin dar por hecho lo que necesitas. Sin prometer lo que todavía no existe. Con flexibilidad para adaptarnos y criterio para decidir qué aporta valor al producto.</p></div><span className="connection-mark" aria-hidden="true"><i /><i /><i /></span></div></section>
         <section className="section container faq-section" id="preguntas" aria-labelledby="faq-title"><div><p className="section-label">Antes de hablar</p><h2 id="faq-title">Las cosas claras, desde el principio.</h2></div><div className="faq-list">{questions.map(([question, answer]) => <details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div></section>
-        <section className="contact-section" id="contacto" aria-labelledby="contact-title"><div className="container contact-layout"><div><p className="section-label">Hablemos de tu contexto</p><h2 id="contact-title">¿Qué te gustaría<br />hacer más sencillo?</h2></div><div className="contact-copy"><p>Cuéntanos qué necesita tu negocio o qué te gustaría saber sobre Odimetry. Te explicaremos dónde podemos ayudarte.</p><div translate="no" dangerouslySetInnerHTML={{ __html: '<!--email_off--><a class="contact-email" href="mailto:info@infranest.es">info@infranest.es <span aria-hidden="true">↗</span></a><!--/email_off-->' }} /><p className="contact-note">El enlace abre tu aplicación de correo. También puedes copiar la dirección y escribirnos desde tu servicio habitual.</p></div></div></section>
+        <section className="contact-section" id="contacto" aria-labelledby="contact-title"><div className="container contact-layout"><div><p className="section-label">Hablemos de tu contexto</p><h2 id="contact-title">¿Qué te gustaría<br />hacer más sencillo?</h2></div><div className="contact-copy"><p>Cuéntanos qué necesita tu negocio o qué te gustaría saber sobre Odimetry. Te explicaremos dónde podemos ayudarte.</p><ContactForm language={language} /><p className="contact-note">Si lo prefieres, también puedes escribirnos directamente a <a href="mailto:info@infranest.es">info@infranest.es</a>.</p></div></div></section>
       </main>
       <footer className="site-footer"><div className="container footer-inner"><a className="brand" href="#inicio" aria-label={language === 'en' ? 'Infranest, back to home' : 'Infranest, volver al inicio'}><img src="/brand/infranest-mark.svg" alt="" width="40" height="40" loading="lazy" /><span translate="no">Infranest</span></a><p>Productos claros para problemas complejos.</p><a className="text-link" href="#preguntas">Preguntas frecuentes</a><a className="text-link" href="#inicio">Volver arriba ↑</a></div></footer>
     </div>
