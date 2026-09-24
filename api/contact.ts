@@ -8,7 +8,7 @@ type ContactBody = {
   email?: unknown
   subject?: unknown
   message?: unknown
-  company?: unknown
+  field_x9k2?: unknown
   language?: unknown
 }
 
@@ -243,7 +243,7 @@ export default async function handler(request: ContactRequest, response: Contact
     return
   }
 
-  if (typeof request.body.company === 'string' && request.body.company.trim()) {
+  if (typeof request.body.field_x9k2 === 'string' && request.body.field_x9k2.trim()) {
     respond(response, 200, { ok: true })
     return
   }

@@ -146,7 +146,7 @@ function ContactForm({ language }: { language: Language }) {
     </div>
     <label>{t('Asunto')}<input name="subject" required maxLength={160} /></label>
     <label>{t('Mensaje')}<textarea name="message" rows={5} required minLength={10} maxLength={5000} /></label>
-    <label className="contact-trap" aria-hidden="true">Company<input name="company" tabIndex={-1} autoComplete="off" /></label>
+    <label className="contact-trap" aria-hidden="true">Leave blank<input name="field_x9k2" tabIndex={-1} autoComplete="off" /></label>
     <button className="contact-submit" type="submit" disabled={status === 'sending'}>
       {status === 'sending' ? t('Enviando…') : t('Enviar mensaje')}
       <span aria-hidden="true">↗</span>
